@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1454818574 source:/home/gavin/Desktop/CSCI176/Program1/main.cpp
+	<iostream>
+	<unistd.h>
+	<cstdlib>
+	<cstring>
+	<sys/wait.h>
+	<sys/time.h>
+

@@ -2,11 +2,13 @@
 #include <unistd.h> //for fork, pipe, and wait
 #include <cstdlib> //for exit(0)
 #include <cstring>
+#include <sys/wait.h>
+#include <sys/time.h>
 
 using namespace std;
 
-double Fibo_i(double n);
-double Fibo_r(double n);
+long unsigned int Fibo_i(int n);
+long unsigned int Fibo_r(int n);
 
 #define GET_TIME(now)\
 {struct timeval t; gettimeofday(&t, NULL);\
@@ -16,7 +18,7 @@ double Fibo_r(double n);
 
 int main()
 {
-    int pid, status //process id and status initialization
+    int pid, status; //process id and status initialization
     int p1[2], p2[2], p3[2], p4[2]; //pipe initialization
     int value = 20; //value we will be using for the fibo func. We will have to use 3 diff values
     double start, stop, Fibo_i_total, Fibo_r_total; //values to time the fibp functions
@@ -32,17 +34,48 @@ int main()
         pid = fork();
         if(pid == 0 && i == 1)
         {
-            write(p1[1], &value, sizeof(value));
-            write(p2[1], &value, sizeof(value));
-            read(p3[0], &Fibo_r_total, sizeof(Fibo_r_total));
-            read(p4[0], &Fibo_i_total, sizeof(Fibo_i_total));
+            write(p1[1], &value, sizeof(value));//pipe1 that writes the value to "child2"
+            write(p2[1], &value, sizeof(value));//pipe2 that writes the value to "child3"
+            read(p3[0], &Fibo_r_total, sizeof(Fibo_r_total));//pipe3 that reads the input
+            read(p4[0], &Fibo_i_total, sizeof(Fibo_i_total));//pipe4 that reads the input
+
+            cout << "Iterative Fibo func: " << Fibo_i_total << " secs";
+            cout << "Recursive Fibo func: " << Fibo_r_total << " secs";
         }
+
+        else if (pid == 0 && i == 2)
+        {
+            GET_TIME(start);
+            read(p1[0], &value, sizeof(value));
+            Fibo_r(value);
+            GET_TIME(stop);
+            Fibo_r_total = stop - start;
+            write(p3[1], &Fibo_r_total, sizeof(Fibo_r_total));
+            exit(0);
+        }
+
+        else if(pid == 0 && i == 3)
+        {
+            GET_TIME(start);
+            read(p2[0], &value, sizeof(value));
+            Fibo_i(value);
+            GET_TIME(stop);
+            Fibo_i_total = stop - start;
+            write(p4[1], &Fibo_i_total, sizeof(Fibo_i_total));
+            exit(0);
+        }
+    }
+
+    for(int i = 1; i <= 3; i++)
+    {
+        pid = wait(&status);
+        cout << "child (pid = " << pid << ") exited status = " << status << "\n" << endl;
     }
 
     return 0;
 }
 
-double Fibo_i(double n)
+long unsigned int Fibo_i(int n)
 {
     int p1 = 1, p2 = 1, temp;
 
@@ -57,11 +90,11 @@ double Fibo_i(double n)
             p1 = p2;
             p2 = temp;
         }
-        return temp;
     }
+     return temp;
 }
 
-double Fibo_r(double n)
+long unsigned int Fibo_r(int n)
 {
     if(n == 1 || n == 2)
         return 1;
