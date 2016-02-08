@@ -20,7 +20,7 @@ int main()
 {
     int pid, status; //process id and status initialization
     int p1[2], p2[2], p3[2], p4[2]; //pipe initialization
-    int value = 20; //value we will be using for the fibo func. We will have to use 3 diff values
+    int value = 47; //value we will be using for the fibo func. We will have to use 3 diff values
     double start, stop, Fibo_i_total, Fibo_r_total; //values to time the fibp functions
 
     //initializing all of the pipes we need for this program
@@ -29,6 +29,7 @@ int main()
     pipe(p3); //pipe 3. will give info to child1(controller) from recursive fibo func
     pipe(p4); //pipe 4. will give info to child1(controller) from incremental fibo func
 
+    cout << "Fibo(20) = " << Fibo_i(value) << "\n";
     for(int i = 1; i <= 3; i++)
     {
         pid = fork();
@@ -38,9 +39,9 @@ int main()
             write(p2[1], &value, sizeof(value));//pipe2 that writes the value to "child3"
             read(p3[0], &Fibo_r_total, sizeof(Fibo_r_total));//pipe3 that reads the input
             read(p4[0], &Fibo_i_total, sizeof(Fibo_i_total));//pipe4 that reads the input
-
-            cout << "Iterative Fibo func: " << Fibo_i_total << " secs";
-            cout << "Recursive Fibo func: " << Fibo_r_total << " secs";
+            cout << "Iterative Fibo func: " << Fibo_i_total << " secs\n\n";
+            cout << "Recursive Fibo func: " << Fibo_r_total << " secs\n\n";
+            exit(0);
         }
 
         else if (pid == 0 && i == 2)
