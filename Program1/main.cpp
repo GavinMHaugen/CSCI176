@@ -1,15 +1,22 @@
+/*Gavin Haugen
+CSCI176 Parallel Processing
+2/6/16
+
+This program compares the efficiencies of two implementations of the Fibonacci number generation functions. We are testing these
+two functions in parallel instead of doing serial testing*/
+
 #include <iostream>
 #include <unistd.h> //for fork, pipe, and wait
 #include <cstdlib> //for exit(0)
-#include <cstring>
-#include <sys/wait.h>
-#include <sys/time.h>
+#include <sys/wait.h> //for wait()
+#include <sys/time.h> //for timing the fibo functions
 
 using namespace std;
 
-long unsigned int Fibo_i(int n);
-long unsigned int Fibo_r(int n);
+long unsigned int Fibo_i(int n); //iterative fibonacci function
+long unsigned int Fibo_r(int n); //recursive fibonaccit function
 
+//our get time macro given to us in class
 #define GET_TIME(now)\
 {struct timeval t; gettimeofday(&t, NULL);\
  now = t.tv_sec + t.tv_usec/1000000.0;}
@@ -29,7 +36,7 @@ int main()
     pipe(p3); //pipe 3. will give info to child1(controller) from recursive fibo func
     pipe(p4); //pipe 4. will give info to child1(controller) from incremental fibo func
 
-    cout << "Fibo(20) = " << Fibo_i(value) << "\n";
+    cout << "Fibo(47) = " << Fibo_i(value) << "\n";
     for(int i = 1; i <= 3; i++)
     {
         pid = fork();
@@ -39,34 +46,36 @@ int main()
             write(p2[1], &value, sizeof(value));//pipe2 that writes the value to "child3"
             read(p3[0], &Fibo_r_total, sizeof(Fibo_r_total));//pipe3 that reads the input
             read(p4[0], &Fibo_i_total, sizeof(Fibo_i_total));//pipe4 that reads the input
+            //outputting times for each fibonacci function
             cout << "Iterative Fibo func: " << Fibo_i_total << " secs\n\n";
             cout << "Recursive Fibo func: " << Fibo_r_total << " secs\n\n";
             exit(0);
         }
-
+        //child(2) handles recursive fibonacci function calculation and timing
         else if (pid == 0 && i == 2)
         {
-            GET_TIME(start);
-            read(p1[0], &value, sizeof(value));
-            Fibo_r(value);
-            GET_TIME(stop);
-            Fibo_r_total = stop - start;
-            write(p3[1], &Fibo_r_total, sizeof(Fibo_r_total));
+            GET_TIME(start); //starts the timer
+            read(p1[0], &value, sizeof(value)); //reads value from controller(child1)
+            Fibo_r(value); //calls recursive fibo function
+            GET_TIME(stop); //stops the timer
+            Fibo_r_total = stop - start; //finds total computation time
+            write(p3[1], &Fibo_r_total, sizeof(Fibo_r_total)); //writes the total computation time back to the controller
             exit(0);
         }
-
+        //child(3) handles iterative fionacci function calculation and timing
         else if(pid == 0 && i == 3)
         {
-            GET_TIME(start);
-            read(p2[0], &value, sizeof(value));
-            Fibo_i(value);
-            GET_TIME(stop);
-            Fibo_i_total = stop - start;
-            write(p4[1], &Fibo_i_total, sizeof(Fibo_i_total));
+            GET_TIME(start);//starts the timwer
+            read(p2[0], &value, sizeof(value));//reads the value from controller(child1)
+            Fibo_i(value); //calls iterative fibo function
+            GET_TIME(stop);// stops the timer
+            Fibo_i_total = stop - start; //finds total computation time
+            write(p4[1], &Fibo_i_total, sizeof(Fibo_i_total)); //writes the total computation time back to the controller
             exit(0);
         }
     }
 
+    //waits 3 times for each of the child processes
     for(int i = 1; i <= 3; i++)
     {
         pid = wait(&status);
@@ -75,7 +84,7 @@ int main()
 
     return 0;
 }
-
+//iterative fibo function
 long unsigned int Fibo_i(int n)
 {
     int p1 = 1, p2 = 1, temp;
@@ -94,7 +103,7 @@ long unsigned int Fibo_i(int n)
     }
      return temp;
 }
-
+//recursive fibo function
 long unsigned int Fibo_r(int n)
 {
     if(n == 1 || n == 2)
